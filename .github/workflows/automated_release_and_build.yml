@@ -14,6 +14,15 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release -d
 
       - name: Build and tag the image for testing and release
         run: >-
@@ -27,21 +36,6 @@ jobs:
           --network host
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
           yarn test
-
-      - name: Set release tag
-        # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-        run: echo "RELEASE_VERSION=$([ ${GITHUB_REF##*/} = "develop" ] && printf '%s\n' $(cat .release_version)-develop || printf '%s\n' $(cat .release_version))" >> $GITHUB_ENV
-
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ env.RELEASE_VERSION }}
-          release_name: ${{ env.RELEASE_VERSION }}
-          draft: false
-          prerelease: ${{ !(github.ref == 'refs/heads/master') }}
 
       - name: Login to registry
         run: >-
